@@ -1,0 +1,138 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spike-redpanda-shiny"
+dynamic = ["version"]
+readme = "README.md"
+requires-python = ">=3.7"
+
+classifiers = [
+    "Intended Audience :: Developers",
+    "Development Status :: 1 - Planning",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+
+dependencies = [
+    "kafka-python >=2.0.2"
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest==7.2.2",
+    "pytest-cov==3.0.0"
+]
+dev = [
+    "ruff>=0.0.276",
+    "pyright>=1.1.317",
+    "black>=22.10.0",
+    "pre-commit>=2.20.0",
+]
+
+[tool.pytest.ini_options]
+log_cli = "True"
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
+log_cli_date_format="%Y-%m-%d %H:%M:%S"
+
+[tool.ruff]
+# Enable flake8-bugbear (`B`) rules.
+select = [
+    "F", # Pyflakes: static checker.
+    "E", # pycodestyle errors.
+    "W", # pycodestyle warnings.
+    "I", # isort: arrange imports. This may be redundant with VScode option `"source.organizeImports": true`
+    "N", # pep8-naming: better naming practices.
+    "D", # pydocstyle: documentation style and coverage.
+    "UP", # pyupgrade: raises dreprecated code practices.
+    "ANN", # flake8-annotations: annotations should be present.
+    "ASYNC", # flake8-async: better async code.
+    "S", # flake8-bandit: security checks.
+    "FBT", # flake8-boolean-trap: better usage of booleans in arguments.
+    "B", # flake8-bugbear: catches frequent bugs.
+    "A", # flake8-builtins: warns about shadowing in-built names.
+    "COM", # flake8-commas: better comma placement.
+    "C4", # flake8-comprehensions: better (list, dictionaries) comprehensions.
+    "DTZ", # flake8-datetimez: enforce using timezone in datetimes.
+    "EM", # flake8-errmsg: better error messages.
+    "ISC", # flake8-implicit-str-concat: better import concatenations.
+    "ICN", # flake8-import-conventions: ensure conventions when using `import`.
+    "G", # flake8-logging-format: better logging.
+    "PIE", # flake8-pie: miscelanea checks.
+    "T20", # flake8-print: do not use print statements.
+    "PYI", # flake8-pyi: better stubs and annotations.
+    "PT", # flake8-pytest-style: improved pytest styling.
+    "RET", # flake8-return: catches bugs in the `return` statement.
+    "SLF", # flake8-self: one should not access private members.
+    "SIM", # flake8-simplify: code, simplified.
+    "TID", # flake8-type-checking: what should be included in TYPE_CHECKING?
+    "ARG", # flake8-unused-arguments: catches unused arguments.
+    "PTH", # flake8-use-pathlib: use `Path` when appropriate.
+    "TD", # flake8-todos: enforce proper formatting of TODOs
+    "ERA", # eradicate: finds commented out code.
+    "PD", # pandas-vet: catches pandas bad practices.
+    "PGH", # pygrep-hooks: miscelanea checks.
+    "PL", # pylint: additional static checks.
+    "TRY", # tryceratops: better try-catch expressions.
+    "NPY", # NumPy-specific rules: catches numpy bad practices.
+    "PERF", # Perflint: catches performance anti-patterns.
+    "RUF" # Ruff-specific rules: miscelanea.
+    ]
+
+ignore = [
+    "E501", # line length
+    "E203",
+    "E402",
+    "ANN101" # no need to annotate `self`
+    ]
+
+# Avoid trying to fix flake8-bugbear (`B`) violations.
+unfixable = ["B"]
+
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+# Ignore `E402` (import violations) in all `__init__.py` files
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["E402"]
+"tests/*" = ["E402"]
+
+[tool.ruff.pydocstyle]
+convention = "google"
+
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+exclude = ["tests/"]
+reportMissingTypeStubs = false
+pythonPlatform = "Linux"
+pythonVersion = "3.9"
