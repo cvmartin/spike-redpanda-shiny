@@ -96,4 +96,11 @@ services:
     depends_on:
       - redpanda-1
 
+  shiny-app:
+    build:
+      dockerfile: docker_deploy/shiny_app/Dockerfile
+    container_name: shiny-app
+    ports:
+      - 3838:3838
+
 
