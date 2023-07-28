@@ -136,3 +136,4 @@ exclude = ["tests/"]
 reportMissingTypeStubs = false
 pythonPlatform = "Linux"
 pythonVersion = "3.9"
+reportUnknownMemberType = false

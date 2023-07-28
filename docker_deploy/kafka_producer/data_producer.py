@@ -4,10 +4,12 @@ import json
 import logging
 import random
 import time
+from concurrent.futures import Future
 from dataclasses import dataclass
 from venv import logger
 
 from kafka import KafkaProducer
+from kafka.producer.future import FutureRecordMetadata
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -52,11 +54,11 @@ def main() -> None:
             ).to_json()
 
             try:
-                future = producer.send(
+                future: Future[FutureRecordMetadata] = producer.send(
                     topic=message_topic,
                     value=message_value,
                 )
-                _ = future.get(timeout=10)
+                _: FutureRecordMetadata = future.get(timeout=10)
             except Exception:  # noqa: PERF203
                 logger.error(
                     "Error sending message",
