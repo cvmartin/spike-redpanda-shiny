@@ -1,4 +1,4 @@
-"""Launch the application as defined in src/app."""
+"""Launch the application as defined in src/app, inside container."""
 
 from app.run import run_app
 

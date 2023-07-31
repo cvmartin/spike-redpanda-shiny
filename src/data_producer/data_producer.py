@@ -11,18 +11,17 @@ from venv import logger
 from kafka import KafkaProducer
 from kafka.producer.future import FutureRecordMetadata
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 METER_IDS = ["A", "B", "C", "D", "E"]
 KAFKA_TOPIC = "meter_measurements"
-REDPANDA_BROKERS = "redpanda-1:29092"
 
 
 @dataclass
 class KafkaProducerConfig:
     """Generic configuration for kakfa producer."""
 
-    redpanda_brokers: str = REDPANDA_BROKERS
+    redpanda_brokers: str
 
 
 @dataclass
@@ -41,13 +40,14 @@ class MessageMeterMeasurements:
         return json.dumps(self.__dict__).encode("utf-8")
 
 
-def main() -> None:
-    """Rund data producer."""
-    producer = KafkaProducer(bootstrap_servers=KafkaProducerConfig.redpanda_brokers)
+def run_producer(kafka_producer_config: KafkaProducerConfig) -> None:
+    """Run data producer."""
+    producer = KafkaProducer(bootstrap_servers=kafka_producer_config.redpanda_brokers)
 
     while True:
+        message_topic: str = KAFKA_TOPIC
+
         for x in METER_IDS:
-            message_topic: str = KAFKA_TOPIC
             message_value: bytes = MessageMeterMeasurements(
                 meter_id=x,
                 measurement=random.randint(0, 100),  # noqa: S311
@@ -67,8 +67,12 @@ def main() -> None:
 
             producer.flush()
 
+        logger.info("Sent batch of messages", extra={"topic": message_topic})
+
         time.sleep(2)
 
 
 if __name__ == "__main__":
-    main()
+    run_producer(
+        kafka_producer_config=KafkaProducerConfig(redpanda_brokers=REDPANDA_BROKERS)
+    )
