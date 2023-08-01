@@ -1,15 +1,14 @@
 """Produce random data. Intended to be run inside a docker container."""
 
-import json
+import asyncio
+import datetime
 import logging
 import random
-import time
-from concurrent.futures import Future
 from dataclasses import dataclass
 from venv import logger
 
-from kafka import KafkaProducer
-from kafka.producer.future import FutureRecordMetadata
+import orjson
+from aiokafka import AIOKafkaProducer
 
 logging.basicConfig(level=logging.INFO)
 
@@ -19,60 +18,95 @@ KAFKA_TOPIC = "meter_measurements"
 
 @dataclass
 class KafkaProducerConfig:
-    """Generic configuration for kakfa producer."""
+    """Generic configuration for kafka producer."""
 
     redpanda_brokers: str
 
 
 @dataclass
-class MessageMeterMeasurements:
+class MessageMeterMeasurement:
     """Generic message to be produced to Kafka brokers."""
 
     meter_id: str
     measurement: float
+    event_timestamp: datetime.datetime
 
     def to_json(self) -> bytes:
         """Convert to json.
 
+        Note the use of `orjson` to convert datetimes to strings.
+
         Returns:
             str: dataclass as json object
         """
-        return json.dumps(self.__dict__).encode("utf-8")
+        return orjson.dumps(self.__dict__)
+
+    @classmethod
+    def from_json(cls, json_string: bytes) -> "MessageMeterMeasurement":
+        """Reconstructs class from an string that can be parsed to json.
+
+        Args:
+            json_string (str): string parsable to json.
+
+        Returns:
+            MessageMeterMeasurements: class, reconstructed.
+        """
+        loaded_data = orjson.loads(json_string)
+        return cls(
+            meter_id=loaded_data["meter_id"],
+            measurement=loaded_data["measurement"],
+            event_timestamp=datetime.datetime.fromisoformat(
+                loaded_data["event_timestamp"]
+            ),
+        )
+
+
+async def custom_produce_kafka_messages(
+    kafka_producer_config: KafkaProducerConfig,
+) -> None:
+    """Custom kafka producer.
+
+    Generates 5 entries every two seconds.
+
+    Args:
+        kafka_producer_config (KafkaProducerConfig): Kafka configuration.
+    """
+    producer = AIOKafkaProducer(
+        bootstrap_servers=kafka_producer_config.redpanda_brokers,
+    )
+    await producer.start()
+    try:
+        while True:
+            message_topic: str = KAFKA_TOPIC
+            for x in METER_IDS:
+                message_value: bytes = MessageMeterMeasurement(
+                    meter_id=x,
+                    measurement=random.randint(0, 100),  # noqa: S311
+                    event_timestamp=datetime.datetime.now(tz=datetime.timezone.utc),
+                ).to_json()
+                try:
+                    await producer.send(message_topic, value=message_value)
+
+                except Exception:  # noqa: PERF203
+                    logger.error(
+                        "Error sending message",
+                        extra={"topic": message_topic, "value": message_value},
+                    )
+            await asyncio.sleep(2)
+    finally:
+        await producer.stop()
 
 
 def run_producer(kafka_producer_config: KafkaProducerConfig) -> None:
-    """Run data producer."""
-    producer = KafkaProducer(bootstrap_servers=kafka_producer_config.redpanda_brokers)
+    """Run kafka producer in an async loop.
 
-    while True:
-        message_topic: str = KAFKA_TOPIC
-
-        for x in METER_IDS:
-            message_value: bytes = MessageMeterMeasurements(
-                meter_id=x,
-                measurement=random.randint(0, 100),  # noqa: S311
-            ).to_json()
-
-            try:
-                future: Future[FutureRecordMetadata] = producer.send(
-                    topic=message_topic,
-                    value=message_value,
-                )
-                _: FutureRecordMetadata = future.get(timeout=10)
-            except Exception:  # noqa: PERF203
-                logger.error(
-                    "Error sending message",
-                    extra={"topic": message_topic, "value": message_value},
-                )
-
-            producer.flush()
-
-        logger.info("Sent batch of messages", extra={"topic": message_topic})
-
-        time.sleep(2)
-
-
-if __name__ == "__main__":
-    run_producer(
-        kafka_producer_config=KafkaProducerConfig(redpanda_brokers=REDPANDA_BROKERS)
-    )
+    Args:
+        kafka_producer_config (KafkaProducerConfig): Kafka configuration.
+    """
+    loop = asyncio.get_event_loop()
+    try:
+        loop.run_until_complete(
+            custom_produce_kafka_messages(kafka_producer_config=kafka_producer_config)
+        )
+    finally:
+        loop.close()
