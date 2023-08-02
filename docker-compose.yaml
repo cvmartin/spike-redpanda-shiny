@@ -59,6 +59,7 @@ services:
 
   kafka-producer:
     build:
+      context: .
       dockerfile: docker_deploy/kafka_producer/Dockerfile
     container_name: kafka-producer
     depends_on:
@@ -66,9 +67,61 @@ services:
 
   shiny-app:
     build:
+      context: .
       dockerfile: docker_deploy/shiny_app/Dockerfile
     container_name: shiny-app
     ports:
       - 3838:3838
+
+  # Flink cluster
+  jobmanager:
+    container_name: jobmanager
+    build:
+      context: ./docker_deploy/flink
+      dockerfile: Dockerfile
+    ports:
+      - 8081:8081
+    command: jobmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+
+  taskmanager:
+    container_name: taskmanager
+    build:
+      context: ./docker_deploy/flink
+      dockerfile: Dockerfile
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    scale: 1
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 20
+
+  sql-client:
+    container_name: sql-client
+    build:
+      context: ./docker_deploy/flink
+      dockerfile: Dockerfile
+    command:
+      - /opt/flink/bin/sql-client.sh
+      - embedded
+      - -l
+      - /opt/sql-client/lib
+      - -f
+      - /etc/sql/set_avg_values.sql
+    depends_on:
+      - jobmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        rest.address: jobmanager
+    volumes:
+      - ./docker_deploy/flink/sql/:/etc/sql
 
 

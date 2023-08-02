@@ -30,9 +30,9 @@ async def consume_kafka_topic(
         await consumer.stop()
 
 
-async def watch_changes(rval: reactive.Value[KafkaMessage]) -> None:
+async def watch_changes(topic_name: str, rval: reactive.Value[KafkaMessage]) -> None:
     async for message in consume_kafka_topic(
-        topic_name="meter_measurements", bootstrap_servers="localhost:9092"
+        topic_name=topic_name, bootstrap_servers="localhost:9092"
     ):
         rval.set(json.loads(message))
         await reactive.flush()
@@ -44,16 +44,29 @@ def app_server(
     session: Session,  # noqa: ARG001
 ) -> None:
     # App setup
-    incoming_val = reactive.Value({})
+    meter_measurements_val = reactive.Value({})
+    avg_meter_values_val = reactive.Value({})
 
     # following https://beta.ruff.rs/docs/rules/asyncio-dangling-task/
-    background_tasks = set()
-    task = asyncio.create_task(watch_changes(incoming_val))
-    background_tasks.add(task)
-    task.add_done_callback(background_tasks.discard)
+    background_tasks: set[asyncio.Task] = set()
+    background_tasks.add(
+        asyncio.create_task(
+            watch_changes(topic_name="meter_measurements", rval=meter_measurements_val),
+        ),
+    )
+    background_tasks.add(
+        asyncio.create_task(
+            watch_changes(topic_name="avg_meter_values", rval=avg_meter_values_val),
+        ),
+    )
 
     # App output
-    @output(id="async_text")
+    @output(id="text_meter_measurements")
     @render.text
     def _():
-        return str(incoming_val.get())
+        return str(meter_measurements_val.get())
+
+    @output(id="text_avg_meter_values")
+    @render.text
+    def _():
+        return str(avg_meter_values_val.get())

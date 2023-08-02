@@ -8,7 +8,7 @@ class TestMessageMeterMeasurement:
         message_initial = MessageMeterMeasurement(
             meter_id="test_id",
             measurement=42,
-            event_timestamp=datetime.datetime.now(tz=datetime.timezone.utc),
+            event_timestamp=datetime.datetime.now(tz=datetime.timezone.utc).timestamp(),
         )
 
         message_reconstructed = MessageMeterMeasurement.from_json(

@@ -29,7 +29,7 @@ class MessageMeterMeasurement:
 
     meter_id: str
     measurement: float
-    event_timestamp: datetime.datetime
+    event_timestamp: float
 
     def to_json(self) -> bytes:
         """Convert to json.
@@ -55,9 +55,7 @@ class MessageMeterMeasurement:
         return cls(
             meter_id=loaded_data["meter_id"],
             measurement=loaded_data["measurement"],
-            event_timestamp=datetime.datetime.fromisoformat(
-                loaded_data["event_timestamp"]
-            ),
+            event_timestamp=loaded_data["event_timestamp"],
         )
 
 
@@ -82,7 +80,9 @@ async def custom_produce_kafka_messages(
                 message_value: bytes = MessageMeterMeasurement(
                     meter_id=x,
                     measurement=random.randint(0, 100),  # noqa: S311
-                    event_timestamp=datetime.datetime.now(tz=datetime.timezone.utc),
+                    event_timestamp=datetime.datetime.now(
+                        tz=datetime.timezone.utc,
+                    ).timestamp(),
                 ).to_json()
                 try:
                     await producer.send(message_topic, value=message_value)
