@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import os
 from typing import Any, AsyncGenerator, Generator
 
 import pytest
@@ -14,7 +15,6 @@ from kafka import KafkaConsumer, TopicPartition
 from kafka.consumer.fetcher import ConsumerRecord
 
 TOPIC = "foo_topic"
-REDPANDA_SERVERS = "localhost:9092"
 METER_IDS = ["X", "Y", "Z"]
 
 
@@ -27,11 +27,23 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, Any, Any]:
     loop.close()
 
 
+@pytest.fixture(scope="session")
+def redpanda_container() -> Generator[RedpandaContainer, Any, Any]:
+    os.environ["TC_HOST"] = "localhost"
+
+    container = RedpandaContainer()
+    container.start()
+    yield container
+    container.stop()
+
+
 @pytest_asyncio.fixture(scope="session")
-async def async_kafka_producer() -> AsyncGenerator[AIOKafkaProducer, Any]:
+async def async_kafka_producer(
+    redpanda_container: RedpandaContainer,
+) -> AsyncGenerator[AIOKafkaProducer, Any]:
     """Provides an asynchronous kafka producer ready to use."""
     producer = AIOKafkaProducer(
-        bootstrap_servers=REDPANDA_SERVERS,
+        bootstrap_servers=redpanda_container.get_bootstrap_server(),
     )
     await producer.start()
     yield producer
@@ -81,6 +93,7 @@ class TestProduceDataMessagesOnce:
     async def test_produce_and_consume(
         self,
         async_kafka_producer: AIOKafkaProducer,
+        redpanda_container: RedpandaContainer,
     ) -> None:
         await produce_data_messages_once(
             producer=async_kafka_producer,
@@ -89,7 +102,8 @@ class TestProduceDataMessagesOnce:
         )
 
         messages = kafka_topic_poll_all_messages(
-            topic=TOPIC, bootstrap_servers=REDPANDA_SERVERS
+            topic=TOPIC,
+            bootstrap_servers=redpanda_container.get_bootstrap_server(),
         )
 
-        assert len(messages) > 0
+        assert len(messages) == len(METER_IDS)

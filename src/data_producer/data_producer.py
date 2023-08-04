@@ -89,6 +89,8 @@ async def produce_data_messages_once(
                 "Error sending message",
                 extra={"topic": message_topic, "value": message_value},
             )
+        finally:
+            await producer.flush()
 
 
 async def produce_data_messages_loop(
