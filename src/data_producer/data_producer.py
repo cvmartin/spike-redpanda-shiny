@@ -59,6 +59,26 @@ class MessageMeterMeasurement:
         )
 
 
+async def produce_once(producer: AIOKafkaProducer, topic: str, meter_ids: list[str]):
+    message_topic: str = topic
+    for x in meter_ids:
+        message_value: bytes = MessageMeterMeasurement(
+            meter_id=x,
+            measurement=random.randint(0, 100),  # noqa: S311
+            event_timestamp=datetime.datetime.now(
+                tz=datetime.timezone.utc,
+            ).timestamp(),
+        ).to_json()
+        try:
+            await producer.send(message_topic, value=message_value)
+
+        except Exception:  # noqa: PERF203
+            logger.error(
+                "Error sending message",
+                extra={"topic": message_topic, "value": message_value},
+            )
+
+
 async def custom_produce_kafka_messages(
     kafka_producer_config: KafkaProducerConfig,
 ) -> None:
@@ -75,23 +95,9 @@ async def custom_produce_kafka_messages(
     await producer.start()
     try:
         while True:
-            message_topic: str = KAFKA_TOPIC
-            for x in METER_IDS:
-                message_value: bytes = MessageMeterMeasurement(
-                    meter_id=x,
-                    measurement=random.randint(0, 100),  # noqa: S311
-                    event_timestamp=datetime.datetime.now(
-                        tz=datetime.timezone.utc,
-                    ).timestamp(),
-                ).to_json()
-                try:
-                    await producer.send(message_topic, value=message_value)
-
-                except Exception:  # noqa: PERF203
-                    logger.error(
-                        "Error sending message",
-                        extra={"topic": message_topic, "value": message_value},
-                    )
+            await produce_once(
+                producer=producer, topic=KAFKA_TOPIC, meter_ids=METER_IDS
+            )
             await asyncio.sleep(2)
     finally:
         await producer.stop()
