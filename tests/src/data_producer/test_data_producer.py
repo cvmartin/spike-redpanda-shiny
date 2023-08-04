@@ -9,6 +9,7 @@ from data_producer.data_producer import (
     MessageMeterMeasurement,
     produce_data_messages_once,
 )
+from helpers.container.redpanda import RedpandaContainer
 from kafka import KafkaConsumer, TopicPartition
 from kafka.consumer.fetcher import ConsumerRecord
 
