@@ -10,7 +10,7 @@ from kafka.admin import NewTopic
 os.environ["TC_HOST"] = "localhost"
 
 
-def produce_and_consume_message(container):
+def produce_and_consume_message(container: RedpandaContainer):
     topic = "test-topic"
     bootstrap_server = container.get_bootstrap_server()
 
@@ -31,24 +31,22 @@ def produce_and_consume_message(container):
     ), "Expected exactly one test message to be present on test topic !"
 
 
-def test_redpanda_producer_consumer():
-    with RedpandaContainer() as container:
-        produce_and_consume_message(container)
+def test_redpanda_producer_consumer(fixture_redpanda_container: RedpandaContainer):
+    produce_and_consume_message(fixture_redpanda_container)
 
 
-def test_schema_registry():
-    with RedpandaContainer() as container:
-        address = container.get_schema_registry_address()
-        subject_name = "test-subject-value"
-        url = f"{address}/subjects"
+def test_schema_registry(fixture_redpanda_container: RedpandaContainer):
+    address = fixture_redpanda_container.get_schema_registry_address()
+    subject_name = "test-subject-value"
+    url = f"{address}/subjects"
 
-        payload = {"schema": json.dumps({"type": "string"})}
-        headers = {"Content-Type": "application/vnd.schemaregistry.v1+json"}
-        create_result = requests.post(
-            f"{url}/{subject_name}/versions", data=json.dumps(payload), headers=headers
-        )
-        assert create_result.status_code == 200
+    payload = {"schema": json.dumps({"type": "string"})}
+    headers = {"Content-Type": "application/vnd.schemaregistry.v1+json"}
+    create_result = requests.post(
+        f"{url}/{subject_name}/versions", data=json.dumps(payload), headers=headers
+    )
+    assert create_result.status_code == 200
 
-        result = requests.get(url)
-        assert result.status_code == 200
-        assert subject_name in result.json()
+    result = requests.get(url)
+    assert result.status_code == 200
+    assert subject_name in result.json()
