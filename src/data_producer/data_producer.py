@@ -12,15 +12,14 @@ from aiokafka import AIOKafkaProducer
 
 logging.basicConfig(level=logging.INFO)
 
-METER_IDS = ["A", "B", "C", "D", "E"]
-KAFKA_TOPIC = "meter_measurements"
-
 
 @dataclass
-class KafkaProducerConfig:
+class KafkaDataProducerConfig:
     """Generic configuration for kafka producer."""
 
     redpanda_brokers: str
+    kafka_topic: str
+    meter_ids: list[str]
 
 
 @dataclass
@@ -59,7 +58,20 @@ class MessageMeterMeasurement:
         )
 
 
-async def produce_once(producer: AIOKafkaProducer, topic: str, meter_ids: list[str]):
+async def produce_data_messages_once(
+    producer: AIOKafkaProducer,
+    topic: str,
+    meter_ids: list[str],
+) -> None:
+    """Produce custom data.
+
+    One message per element in `meter_ids`.
+
+    Args:
+        producer (AIOKafkaProducer): Kafka producer.
+        topic (str): Kafka topic
+        meter_ids (list[str]): List of meter IDs to iterate over.
+    """
     message_topic: str = topic
     for x in meter_ids:
         message_value: bytes = MessageMeterMeasurement(
@@ -79,12 +91,12 @@ async def produce_once(producer: AIOKafkaProducer, topic: str, meter_ids: list[s
             )
 
 
-async def custom_produce_kafka_messages(
-    kafka_producer_config: KafkaProducerConfig,
+async def produce_data_messages_loop(
+    kafka_producer_config: KafkaDataProducerConfig,
 ) -> None:
-    """Custom kafka producer.
+    """Produce data in an infinite loop.
 
-    Generates 5 entries every two seconds.
+    Frequency of data broadcasting is defined here.
 
     Args:
         kafka_producer_config (KafkaProducerConfig): Kafka configuration.
@@ -93,26 +105,14 @@ async def custom_produce_kafka_messages(
         bootstrap_servers=kafka_producer_config.redpanda_brokers,
     )
     await producer.start()
+
     try:
         while True:
-            await produce_once(
-                producer=producer, topic=KAFKA_TOPIC, meter_ids=METER_IDS
+            await produce_data_messages_once(
+                producer=producer,
+                topic=kafka_producer_config.kafka_topic,
+                meter_ids=kafka_producer_config.meter_ids,
             )
             await asyncio.sleep(2)
     finally:
         await producer.stop()
-
-
-def run_producer(kafka_producer_config: KafkaProducerConfig) -> None:
-    """Run kafka producer in an async loop.
-
-    Args:
-        kafka_producer_config (KafkaProducerConfig): Kafka configuration.
-    """
-    loop = asyncio.get_event_loop()
-    try:
-        loop.run_until_complete(
-            custom_produce_kafka_messages(kafka_producer_config=kafka_producer_config)
-        )
-    finally:
-        loop.close()

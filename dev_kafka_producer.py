@@ -1,8 +1,9 @@
 """Launch data producer, in dev."""
-from data_producer.data_producer import KafkaProducerConfig, run_producer
+import asyncio
 
-REDPANDA_BROKERS = "localhost:9092"
+from data_producer.config import producer_config_dev
+from data_producer.data_producer import produce_data_messages_loop
 
-run_producer(
-    kafka_producer_config=KafkaProducerConfig(redpanda_brokers=REDPANDA_BROKERS)
+asyncio.run(
+    produce_data_messages_loop(kafka_producer_config=producer_config_dev),
 )
