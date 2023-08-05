@@ -21,14 +21,16 @@ async def consume_kafka_topic(
         kafka_consumer_config (KafkaConsumerConfig): Kafka consumer configuration.
 
     Returns:
-        AsyncGenerator[str, None]: Kafka messages as they arrive to the topic.
+        AsyncGenerator[str, None]: An asynchronous generator that yields Kafka messages as they arrive on the topic.
 
     Yields:
-        Iterator[AsyncGenerator[str, None]]: Kafka messages as they arrive to the topic.
+        str: A decoded message from the Kafka topic as a string.
     """
     consumer = AIOKafkaConsumer(
         topic_name,
         bootstrap_servers=kafka_consumer_config.bootstrap_servers,
+        # setting to "earliest" fetches all the messages.
+        auto_offset_reset="latest",
     )
 
     await consumer.start()
