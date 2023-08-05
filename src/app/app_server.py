@@ -17,26 +17,53 @@ def app_server(
     kafka_consumer_config = KafkaConsumerConfig(bootstrap_servers=REDPANDA_SERVERS)
 
     @reactive.Calc
-    def meter_measurements() -> Callable[[], KafkaMessage]:
+    def val_meter_measurements() -> Callable[[], KafkaMessage]:
         return rval_from_kafka_topic(
             "meter_measurements",
             kafka_consumer_config=kafka_consumer_config,
         )
 
     @reactive.Calc
-    def avg_meter_values() -> Callable[[], KafkaMessage]:
+    def val_avg_meter_values() -> Callable[[], KafkaMessage]:
         return rval_from_kafka_topic(
             "avg_meter_values",
             kafka_consumer_config=kafka_consumer_config,
         )
 
+    @reactive.Calc
+    def accu_meter_measurements() -> Callable[[], list[KafkaMessage]]:
+        rv_state: reactive.Value[list[KafkaMessage]] = reactive.Value([])
+
+        @reactive.Effect
+        @reactive.event(val_meter_measurements())
+        def _():
+            state = rv_state.get()
+            # copy on assignment to handle mutability
+            # https://shiny.posit.co/py/docs/reactive-mutable.html#copy-on-assignment
+            copy_state = state.copy()
+            copy_state.append(val_meter_measurements()())
+            rv_state.set(copy_state)
+
+        return rv_state
+
     # App output
     @output(id="text_meter_measurements")
     @render.text
     def _():
-        return str(meter_measurements()())
+        return str(val_meter_measurements()())
 
     @output(id="text_avg_meter_values")
     @render.text
     def _():
-        return str(avg_meter_values()())
+        return str(val_avg_meter_values()())
+
+    @output(id="text_total_accu_meter_measurements")
+    @render.text
+    def _():
+        return f"Total messages: {len(accu_meter_measurements()())}"
+
+    @output(id="text_accu_meter_measurements")
+    @render.text
+    def _():
+        # new line after comma.
+        return str(accu_meter_measurements()()).replace("}, ", "},\n")

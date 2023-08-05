@@ -76,7 +76,7 @@ def rval_from_kafka_topic(
     Returns:
         Callable[[], KafkaMessage]: reactive value.
     """
-    reactive_val = reactive.Value({})
+    reactive_val: reactive.Value[KafkaMessage] = reactive.Value()
     _ = (
         asyncio.create_task(
             update_rval_from_kafka_topic(
