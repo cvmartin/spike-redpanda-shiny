@@ -1,44 +1,11 @@
 """Server side of application."""
-import asyncio
-import json
-from typing import Any, AsyncGenerator, Callable
+from typing import Callable
 
-from aiokafka import AIOKafkaConsumer, ConsumerRecord
+from app.config import KafkaConsumerConfig
+from app.helpers.kafka import KafkaMessage, rval_from_kafka_topic
 from shiny import Inputs, Outputs, Session, reactive, render
 
-KafkaMessage = dict[str, Any]
-
-
-async def consume_kafka_topic(
-    topic_name: str,
-    bootstrap_servers: str,
-) -> AsyncGenerator[str, None]:
-    """Consume asynchronously from a kafka topic."""
-    consumer = AIOKafkaConsumer(
-        topic_name,
-        bootstrap_servers=bootstrap_servers,
-    )
-
-    await consumer.start()
-
-    try:
-        message: ConsumerRecord[bytes, bytes]
-        async for message in consumer:
-            yield message.value.decode("utf-8")
-    finally:
-        await consumer.stop()
-
-
-async def watch_kafka_topic(
-    topic_name: str,
-    update_variable: reactive.Value[KafkaMessage],
-) -> None:
-    async for message in consume_kafka_topic(
-        topic_name=topic_name,
-        bootstrap_servers="localhost:9092",
-    ):
-        update_variable.set(json.loads(message))
-        await reactive.flush()
+REDPANDA_SERVERS = "localhost:9092"
 
 
 def app_server(
@@ -47,32 +14,21 @@ def app_server(
     session: Session,  # noqa: ARG001
 ) -> None:
     # App setup
+    kafka_consumer_config = KafkaConsumerConfig(bootstrap_servers=REDPANDA_SERVERS)
 
     @reactive.Calc
     def meter_measurements() -> Callable[[], KafkaMessage]:
-        reactive_val = reactive.Value({})
-        _ = (
-            asyncio.create_task(
-                watch_kafka_topic(
-                    topic_name="meter_measurements",
-                    update_variable=reactive_val,
-                ),
-            ),
+        return rval_from_kafka_topic(
+            "meter_measurements",
+            kafka_consumer_config=kafka_consumer_config,
         )
-        return reactive_val
 
     @reactive.Calc
     def avg_meter_values() -> Callable[[], KafkaMessage]:
-        reactive_val = reactive.Value({})
-        _ = (
-            asyncio.create_task(
-                watch_kafka_topic(
-                    topic_name="avg_meter_values",
-                    update_variable=reactive_val,
-                ),
-            ),
+        return rval_from_kafka_topic(
+            "avg_meter_values",
+            kafka_consumer_config=kafka_consumer_config,
         )
-        return reactive_val
 
     # App output
     @output(id="text_meter_measurements")

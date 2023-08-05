@@ -23,6 +23,9 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, Any, Any]:
 
 @pytest.fixture(scope="session")
 def fixture_redpanda_container() -> Generator[RedpandaContainer, Any, Any]:
+    """Provides a redpanda container ready to use."""
+    # Necessary to specify this to in Windows the container host
+    # is recognized as `localhost`.
     os.environ["TC_HOST"] = "localhost"
 
     container = RedpandaContainer()
