@@ -5,6 +5,7 @@ from typing import Any, AsyncGenerator, Generator
 import pytest
 import pytest_asyncio
 from aiokafka import AIOKafkaProducer
+
 from helpers.container.redpanda import RedpandaContainer
 
 

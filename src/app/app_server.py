@@ -1,18 +1,27 @@
 """Server side of application."""
 from typing import Callable
 
+from shiny import Inputs, Outputs, Session, reactive, render
+
 from app.config import KafkaConsumerConfig
 from app.helpers.kafka import KafkaMessage, rval_from_kafka_topic
-from shiny import Inputs, Outputs, Session, reactive, render
 
 REDPANDA_SERVERS = "localhost:9092"
 
 
+# ruff: noqa: ARG001, A002
 def app_server(
-    input: Inputs,  # noqa: A002
+    input: Inputs,
     output: Outputs,
-    session: Session,  # noqa: ARG001
+    session: Session,
 ) -> None:
+    """Server side of application.
+
+    Args:
+        input (Inputs): Shiny object.
+        output (Outputs): Shiny object.
+        session (Session): Shiny object.
+    """
     # App setup
     kafka_consumer_config = KafkaConsumerConfig(bootstrap_servers=REDPANDA_SERVERS)
 
@@ -36,7 +45,7 @@ def app_server(
 
         @reactive.Effect
         @reactive.event(val_meter_measurements())
-        def _():
+        def _() -> None:
             state = rv_state.get()
             # copy on assignment to handle mutability
             # https://shiny.posit.co/py/docs/reactive-mutable.html#copy-on-assignment
@@ -49,21 +58,21 @@ def app_server(
     # App output
     @output(id="text_meter_measurements")
     @render.text
-    def _():
+    def _() -> str:
         return str(val_meter_measurements()())
 
     @output(id="text_avg_meter_values")
     @render.text
-    def _():
+    def _() -> str:
         return str(val_avg_meter_values()())
 
     @output(id="text_total_accu_meter_measurements")
     @render.text
-    def _():
+    def _() -> str:
         return f"Total messages: {len(accu_meter_measurements()())}"
 
     @output(id="text_accu_meter_measurements")
     @render.text
-    def _():
+    def _() -> str:
         # new line after comma.
         return str(accu_meter_measurements()()).replace("}, ", "},\n")

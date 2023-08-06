@@ -1,14 +1,15 @@
-import datetime
+from datetime import datetime, timezone
 
 import pytest
 from aiokafka import AIOKafkaProducer
+from kafka import KafkaConsumer, TopicPartition
+from kafka.consumer.fetcher import ConsumerRecord
+
 from data_producer.data_producer import (
     MessageMeterMeasurement,
     produce_data_messages_once,
 )
 from helpers.container.redpanda import RedpandaContainer
-from kafka import KafkaConsumer, TopicPartition
-from kafka.consumer.fetcher import ConsumerRecord
 
 TOPIC = "foo_topic"
 METER_IDS = ["X", "Y", "Z"]
@@ -32,9 +33,9 @@ def kafka_topic_poll_all_messages(topic: str, bootstrap_servers: str) -> list[st
     # seek_to_beginning() and poll() must follow
     # to fetch all messages.
     consumer.seek_to_beginning()
-    msgs: list[ConsumerRecord] = consumer.poll(timeout_ms=100)[tp]
+    msgs: list[ConsumerRecord] = consumer.poll(timeout_ms=100)[tp]  # type: ignore
     consumer.close()
-    return [x.value.decode("utf-8") for x in msgs]
+    return [x.value.decode("utf-8") for x in msgs]  # type: ignore
 
 
 class TestMessageMeterMeasurement:
@@ -42,7 +43,7 @@ class TestMessageMeterMeasurement:
         message_initial = MessageMeterMeasurement(
             meter_id="test_id",
             measurement=42,
-            event_timestamp=datetime.datetime.now(tz=datetime.timezone.utc).timestamp(),
+            event_timestamp=datetime.now(tz=timezone.utc).timestamp(),
         )
 
         message_reconstructed = MessageMeterMeasurement.from_json(

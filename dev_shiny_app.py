@@ -2,4 +2,4 @@
 
 from app.run import run_app
 
-run_app(options={"port": 8000, "launch_browser": False})  # noqa: S104
+run_app(options={"port": 8000, "launch_browser": False})

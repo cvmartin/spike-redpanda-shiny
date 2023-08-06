@@ -3,14 +3,14 @@
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
         "source.organizeImports": true,
-        "source.fixAll": false,
+        "source.fixAll": true
     },
     "python.analysis.autoFormatStrings": true,
     "python.analysis.logLevel": "Warning",
     "python.analysis.typeCheckingMode": "strict",
     "files.trimTrailingWhitespace": true,
     "files.insertFinalNewline": true,
-    "python.formatting.provider": "none",
+    "python.formatting.provider": "black",
     "python.linting.enabled": true,
     "python.testing.unittestArgs": [
         "-v",

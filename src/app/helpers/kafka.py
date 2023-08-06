@@ -4,8 +4,9 @@ import json
 from typing import Any, AsyncGenerator, Callable
 
 from aiokafka import AIOKafkaConsumer, ConsumerRecord
-from app.config import KafkaConsumerConfig
 from shiny import reactive
+
+from app.config import KafkaConsumerConfig
 
 KafkaMessage = dict[str, Any]
 
@@ -38,7 +39,7 @@ async def consume_kafka_topic(
     try:
         message: ConsumerRecord[bytes, bytes]
         async for message in consumer:
-            yield message.value.decode("utf-8")
+            yield message.value.decode("utf-8")  # type: ignore
     finally:
         await consumer.stop()
 

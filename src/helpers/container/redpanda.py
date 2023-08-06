@@ -1,4 +1,5 @@
-import os
+"""Set up a redpanda container, inspired by testcontainers."""
+
 import tarfile
 import time
 from io import BytesIO
@@ -45,7 +46,7 @@ class RedpandaContainer(DockerContainer):
                 /usr/bin/rpk redpanda start --mode dev-container --smp 1 --memory 1G \
                 --kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092  \
                 --advertise-kafka-addr PLAINTEXT://127.0.0.1:29092,OUTSIDE://{host}:{port}
-                """
+                """,
             )
             .strip()
             .encode("utf-8")

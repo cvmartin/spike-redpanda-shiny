@@ -41,7 +41,7 @@ class MessageMeterMeasurement:
         return orjson.dumps(self.__dict__)
 
     @classmethod
-    def from_json(cls, json_string: bytes) -> "MessageMeterMeasurement":
+    def from_json(cls, json_string: bytes) -> "MessageMeterMeasurement":  # noqa: ANN102
         """Reconstructs class from an string that can be parsed to json.
 
         Args:

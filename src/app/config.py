@@ -1,3 +1,5 @@
+"""Configuration for application."""
+
 from dataclasses import dataclass
 
 

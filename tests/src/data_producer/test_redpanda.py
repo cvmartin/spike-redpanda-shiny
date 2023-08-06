@@ -2,9 +2,10 @@ import json
 import os
 
 import requests
-from helpers.container.redpanda import RedpandaContainer
 from kafka import KafkaAdminClient, KafkaConsumer, KafkaProducer, TopicPartition
 from kafka.admin import NewTopic
+
+from helpers.container.redpanda import RedpandaContainer
 
 # Because of windows, this needs to be specified.
 os.environ["TC_HOST"] = "localhost"
@@ -18,8 +19,8 @@ def produce_and_consume_message(container: RedpandaContainer):
     admin.create_topics([NewTopic(topic, 1, 1)])
 
     producer = KafkaProducer(bootstrap_servers=[bootstrap_server])
-    future = producer.send(topic, b"verification message")
-    future.get(timeout=10)
+    _ = producer.send(topic, b"verification message")
+    _.get(timeout=10)
     producer.close()
 
     consumer = KafkaConsumer(bootstrap_servers=[bootstrap_server])
@@ -40,6 +41,8 @@ def test_schema_registry(fixture_redpanda_container: RedpandaContainer):
     subject_name = "test-subject-value"
     url = f"{address}/subjects"
 
+    success_code: int = 200
+
     payload = {"schema": json.dumps({"type": "string"})}
     headers = {"Content-Type": "application/vnd.schemaregistry.v1+json"}
     create_result = requests.post(
@@ -48,8 +51,8 @@ def test_schema_registry(fixture_redpanda_container: RedpandaContainer):
         headers=headers,
         timeout=1,
     )
-    assert create_result.status_code == 200
+    assert create_result.status_code == success_code
 
     result = requests.get(url, timeout=1)
-    assert result.status_code == 200
+    assert result.status_code == success_code
     assert subject_name in result.json()
