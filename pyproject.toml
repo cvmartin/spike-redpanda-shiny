@@ -41,6 +41,8 @@ log_cli = "True"
 log_cli_level = "INFO"
 log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
 log_cli_date_format="%Y-%m-%d %H:%M:%S"
+# inclusion of `.` allows to import functions from `tests.helpers`
+pythonpath = "src ."
 
 [tool.ruff]
 # Enable flake8-bugbear (`B`) rules.
@@ -89,7 +91,6 @@ select = [
 ignore = [
     "E501", # line length
     "ANN101", # no need to annotate `self`
-    "S101", # igore assert (which is very much used in tests)
     "D104", # no need to document __init__.py files (public packages)
     "PGH003" # generic `type: ignore` are allowed (because pylance does not allow specifics)
     ]
@@ -100,7 +101,7 @@ fix = true
 fixable = ["COM", "I"]
 
 # allow imports relative to the "src" and "tests" directories.
-src = ["src", "tests"]
+src = ["src"]
 
 # same as Black.
 line-length = 88
@@ -137,7 +138,8 @@ exclude = [
 #"__init__.py" = ["E402"]
 "tests/*" = [
     "ANN201", # missing return type
-    "D" # documentation conventions
+    "D", # documentation conventions
+    "S101" # assert is allowed in tests
 ]
 
 [tool.ruff.flake8-annotations]
@@ -154,3 +156,4 @@ reportMissingTypeStubs = false
 pythonPlatform = "Linux"
 pythonVersion = "3.9"
 reportUnknownMemberType = false
+

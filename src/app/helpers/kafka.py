@@ -32,6 +32,7 @@ async def consume_kafka_topic(
         bootstrap_servers=kafka_consumer_config.bootstrap_servers,
         # setting to "earliest" fetches all the messages.
         auto_offset_reset="latest",
+        group_id="shiny_app",
     )
 
     await consumer.start()

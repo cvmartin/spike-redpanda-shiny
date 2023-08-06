@@ -5,7 +5,7 @@ import requests
 from kafka import KafkaAdminClient, KafkaConsumer, KafkaProducer, TopicPartition
 from kafka.admin import NewTopic
 
-from helpers.container.redpanda import RedpandaContainer
+from tests.helpers.container.redpanda import RedpandaContainer
 
 # Because of windows, this needs to be specified.
 os.environ["TC_HOST"] = "localhost"
@@ -23,7 +23,10 @@ def produce_and_consume_message(container: RedpandaContainer):
     _.get(timeout=10)
     producer.close()
 
-    consumer = KafkaConsumer(bootstrap_servers=[bootstrap_server])
+    consumer = KafkaConsumer(
+        bootstrap_servers=[bootstrap_server],
+        group_id="group_testing",
+    )
     tp = TopicPartition(topic, 0)
     consumer.assign([tp])
     consumer.seek_to_beginning()

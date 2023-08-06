@@ -9,7 +9,7 @@ from data_producer.data_producer import (
     MessageMeterMeasurement,
     produce_data_messages_once,
 )
-from helpers.container.redpanda import RedpandaContainer
+from tests.helpers.container.redpanda import RedpandaContainer
 
 TOPIC = "foo_topic"
 METER_IDS = ["X", "Y", "Z"]
@@ -27,7 +27,10 @@ def kafka_topic_poll_all_messages(topic: str, bootstrap_servers: str) -> list[st
     Returns:
         list[str]: List of decoded messages values.
     """
-    consumer = KafkaConsumer(bootstrap_servers=bootstrap_servers)
+    consumer = KafkaConsumer(
+        bootstrap_servers=bootstrap_servers,
+        group_id="group_testing",
+    )
     tp = TopicPartition(topic, 0)
     consumer.assign([tp])
     # seek_to_beginning() and poll() must follow

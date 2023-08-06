@@ -6,7 +6,7 @@ import pytest
 import pytest_asyncio
 from aiokafka import AIOKafkaProducer
 
-from helpers.container.redpanda import RedpandaContainer
+from tests.helpers.container.redpanda import RedpandaContainer
 
 
 @pytest.fixture(scope="session")
