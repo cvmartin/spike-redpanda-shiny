@@ -43,10 +43,13 @@ def test_schema_registry(fixture_redpanda_container: RedpandaContainer):
     payload = {"schema": json.dumps({"type": "string"})}
     headers = {"Content-Type": "application/vnd.schemaregistry.v1+json"}
     create_result = requests.post(
-        f"{url}/{subject_name}/versions", data=json.dumps(payload), headers=headers
+        f"{url}/{subject_name}/versions",
+        data=json.dumps(payload),
+        headers=headers,
+        timeout=1,
     )
     assert create_result.status_code == 200
 
-    result = requests.get(url)
+    result = requests.get(url, timeout=1)
     assert result.status_code == 200
     assert subject_name in result.json()
