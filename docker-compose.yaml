@@ -27,7 +27,7 @@ services:
       - --advertise-rpc-addr
       - redpanda-1:33145
     ports:
-      # - 8081:8081
+      - 8081:8081
       - 8082:8082
       - 9092:9092
       - 9644:9644
@@ -45,7 +45,8 @@ services:
         kafka:
           brokers: ["redpanda-1:29092"]
           schemaRegistry:
-            enabled: false
+            enabled: true
+            urls: ["http://redpanda-1:8081"]
         redpanda:
           adminApi:
             enabled: true
@@ -123,5 +124,16 @@ services:
         rest.address: jobmanager
     volumes:
       - ./docker_deploy/flink/sql/:/etc/sql
+
+  schemas-loader-client:
+    build:
+      context: ./docker_deploy/schemas_loader
+      dockerfile: Dockerfile
+    container_name: schemas-loader-client
+    depends_on:
+      - redpanda-1
+    volumes:
+      - ./docker_deploy/schemas_loader/:/etc/schemas_loader
+
 
 
