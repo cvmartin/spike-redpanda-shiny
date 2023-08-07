@@ -3,8 +3,7 @@ import random
 from typing import Any
 from uuid import uuid4
 
-import requests
-from confluent_kafka import Producer
+import pytest
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
 from confluent_kafka.serialization import (
@@ -13,7 +12,10 @@ from confluent_kafka.serialization import (
 )
 from kafka import KafkaProducer
 
+from data_producer.data_producer import retrieve_schema_from_registry
 
+
+@pytest.mark.skip(reason="depends on locally deployed broker")
 def test_provisional():
     address_registry = "http://localhost:8081"
     bootstrap_server = "localhost:9092"
@@ -27,7 +29,7 @@ def test_provisional():
 
     avro_value_serializer = AvroSerializer(
         schema_registry_client=schema_registry_client,
-        schema_str=_retrieve_schema_from_registry(
+        schema_str=retrieve_schema_from_registry(
             schema_registry_url=address_registry,
             subject="meter_measurements-value",
             version=1,
@@ -61,29 +63,3 @@ def test_provisional():
     )
 
     producer.flush()
-
-
-def _retrieve_schema_from_registry(
-    schema_registry_url: str,
-    subject: str,
-    version: int,
-) -> str:
-    """Retrieves a schema from the schema registry.
-
-    Args:
-        schema_registry_url (str): URL of the schema registry.
-        subject (str): Schema subject name.
-        version (int): Version number of the schema.
-
-    Returns:
-        dict: The retrieved schema in dictionary format.
-    """
-    url = f"{schema_registry_url}/subjects/{subject}/versions/{version}"
-    response = requests.get(url, timeout=10)
-
-    if response.status_code != requests.codes.all_ok:
-        response.raise_for_status()
-
-    schema_data = response.json()
-    schema: str = schema_data.get("schema")
-    return schema

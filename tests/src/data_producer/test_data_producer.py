@@ -63,6 +63,8 @@ class TestProduceDataMessagesOnce:
         fixture_async_kafka_producer: AIOKafkaProducer,
         fixture_redpanda_container: RedpandaContainer,
     ) -> None:
+        # note how with `value_serializer=lambda x: orjson.dumps(x)`
+        # set in the producer the schema registry is just not used.
         await produce_data_messages_once(
             producer=fixture_async_kafka_producer,
             topic=TOPIC,

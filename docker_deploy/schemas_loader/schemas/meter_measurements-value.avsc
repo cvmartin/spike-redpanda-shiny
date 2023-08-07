@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "meter_measurements",
+  "namespace": "com.example",
+  "fields": [
+    {
+      "name": "meter_id",
+      "type": "string"
+    },
+    {
+      "name": "measurement",
+      "type": "int"
+    },
+    {
+      "name": "event_timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    }
+  ]
+}
+

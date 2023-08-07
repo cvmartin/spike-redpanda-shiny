@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Define variables for the schema file and the target URL
-SCHEMA_FILE="etc/schemas_loader/schemas/purchase-value.avsc"
-TARGET_URL="http://redpanda-1:8081/subjects/purchase-value/versions"
+SCHEMA_FILE="etc/schemas_loader/schemas/meter_measurements-value.avsc"
+TARGET_URL="http://redpanda-1:8081/subjects/meter_measurements-value/versions"
 
 # Use 'jq' to read the schema file and format it as JSON
 SCHEMA_JSON=$(jq -Rs '{schema: .}' < "$SCHEMA_FILE")
