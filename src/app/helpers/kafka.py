@@ -13,7 +13,7 @@ KafkaMessage = dict[str, Any]
 async def consume_kafka_topic(
     topic_name: str,
     kafka_consumer_config: KafkaConsumerConfig,
-) -> AsyncGenerator[str, None]:
+) -> AsyncGenerator[ConsumerRecord[str, KafkaMessage], None]:
     """Consume kafka topic asynchronously.
 
     Args:
@@ -21,14 +21,15 @@ async def consume_kafka_topic(
         kafka_consumer_config (KafkaConsumerConfig): Kafka consumer configuration.
 
     Returns:
-        AsyncGenerator[str, None]: An asynchronous generator that yields Kafka messages as they arrive on the topic.
+        AsyncGenerator[ConsumerRecord, None]: An asynchronous generator that yields Kafka messages as they arrive on the topic.
 
     Yields:
-        str: A decoded message from the Kafka topic as a string.
+        ConsumerRecord: A deserialized message from the Kafka topic
     """
     consumer = AIOKafkaConsumer(
         topic_name,
         bootstrap_servers=kafka_consumer_config.bootstrap_servers,
+        value_deserializer=kafka_consumer_config.value_deserializer,
         # setting to "earliest" fetches all the messages.
         # setting up `group_id` will cause the offset to not be set up to
         # "latest" in subsequent runs.
@@ -38,7 +39,7 @@ async def consume_kafka_topic(
     await consumer.start()
 
     try:
-        message: ConsumerRecord[bytes, bytes]
+        message: ConsumerRecord[str, KafkaMessage]
         async for message in consumer:
             yield message
     finally:
@@ -61,7 +62,7 @@ async def update_rval_from_kafka_topic(
         topic_name=topic_name,
         kafka_consumer_config=kafka_consumer_config,
     ):
-        update_variable.set(message)
+        update_variable.set(message.value)  # type: ignore
         await reactive.flush()
 
 
