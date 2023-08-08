@@ -1,12 +1,12 @@
 """Server side of application."""
 from typing import Callable
 
+from confluent_kafka.schema_registry import SchemaRegistryClient
 from shiny import Inputs, Outputs, Session, reactive, render
 
-from app.config import KafkaConsumerConfig
+from app.config import ConfigExternal, KafkaConsumerConfig
 from app.helpers.kafka import KafkaMessage, rval_from_kafka_topic
-
-REDPANDA_SERVERS = "localhost:9092"
+from data_producer.avro_parser import AvroParser
 
 
 # ruff: noqa: ARG001, A002
@@ -23,12 +23,29 @@ def app_server(
         session (Session): Shiny object.
     """
     # App setup
-    kafka_consumer_config = KafkaConsumerConfig(bootstrap_servers=REDPANDA_SERVERS)
+    app_state = session.app.starlette_app.state
+    config_external: ConfigExternal = app_state.CONFIG_EXTERNAL
+
+    meter_measurements_parser = AvroParser(
+        schema_registry_client=SchemaRegistryClient(
+            conf={"url": config_external.schema_registry_url},
+        ),
+        schema_subject="meter_measurements-value",
+        schema_version=1,
+        topic_name="meter_measurements",
+    )
+
+    kafka_consumer_config = KafkaConsumerConfig(
+        bootstrap_servers=config_external.bootstrap_servers,
+        value_deserializer=meter_measurements_parser.deserialize_value,
+    )
 
     @reactive.Calc
     def val_meter_measurements() -> Callable[[], KafkaMessage]:
+        kafka_topic = "meter_measurements"
+
         return rval_from_kafka_topic(
-            "meter_measurements",
+            kafka_topic,
             kafka_consumer_config=kafka_consumer_config,
         )
 

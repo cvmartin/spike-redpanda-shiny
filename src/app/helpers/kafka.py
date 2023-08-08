@@ -1,6 +1,5 @@
 """Kafka utilities for shiny application."""
 import asyncio
-import json
 from typing import Any, AsyncGenerator, Callable
 
 from aiokafka import AIOKafkaConsumer, ConsumerRecord
@@ -31,8 +30,9 @@ async def consume_kafka_topic(
         topic_name,
         bootstrap_servers=kafka_consumer_config.bootstrap_servers,
         # setting to "earliest" fetches all the messages.
+        # setting up `group_id` will cause the offset to not be set up to
+        # "latest" in subsequent runs.
         auto_offset_reset="latest",
-        group_id="shiny_app",
     )
 
     await consumer.start()
@@ -40,7 +40,7 @@ async def consume_kafka_topic(
     try:
         message: ConsumerRecord[bytes, bytes]
         async for message in consumer:
-            yield message.value.decode("utf-8")  # type: ignore
+            yield message
     finally:
         await consumer.stop()
 
@@ -61,7 +61,7 @@ async def update_rval_from_kafka_topic(
         topic_name=topic_name,
         kafka_consumer_config=kafka_consumer_config,
     ):
-        update_variable.set(json.loads(message))
+        update_variable.set(message)
         await reactive.flush()
 
 

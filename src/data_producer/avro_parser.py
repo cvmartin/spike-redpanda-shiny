@@ -35,6 +35,8 @@ class AvroParser:
         self.schema_version = schema_version
         self.topic_name = topic_name
 
+        # key schema is universal, and hence does not interact with
+        # the schema.
         self.key_schema: str = '{"type": "string"}'
 
         self.registered_value_schema: RegisteredSchema = (
@@ -46,7 +48,6 @@ class AvroParser:
         self.value_schema: Schema = self.registered_value_schema.schema.schema_str
 
         self.avro_key_serializer = AvroSerializer(
-            conf={"auto.register.schemas": False},
             schema_registry_client=self.schema_registry_client,
             schema_str=self.key_schema,
         )
@@ -57,7 +58,6 @@ class AvroParser:
         )
 
         self.avro_value_serializer = AvroSerializer(
-            conf={"auto.register.schemas": False},
             schema_registry_client=self.schema_registry_client,
             schema_str=self.value_schema,
         )

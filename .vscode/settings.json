@@ -7,6 +7,8 @@
     },
     "python.analysis.autoFormatStrings": true,
     "python.analysis.logLevel": "Warning",
+    "python.analysis.autoSearchPaths": true,
+    "python.analysis.extraPaths": ["src"],
     "python.analysis.typeCheckingMode": "strict",
     "files.trimTrailingWhitespace": true,
     "files.insertFinalNewline": true,
