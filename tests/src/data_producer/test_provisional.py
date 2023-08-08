@@ -5,17 +5,18 @@ from uuid import uuid4
 
 import pytest
 from confluent_kafka.schema_registry import SchemaRegistryClient
-from confluent_kafka.schema_registry.avro import AvroSerializer
+from confluent_kafka.schema_registry.avro import AvroDeserializer, AvroSerializer
 from confluent_kafka.serialization import (
     MessageField,
     SerializationContext,
 )
-from kafka import KafkaProducer
+from kafka import KafkaConsumer, KafkaProducer, TopicPartition
+from kafka.consumer.fetcher import ConsumerRecord
 
 from data_producer.data_producer import retrieve_schema_from_registry
 
 
-@pytest.mark.skip(reason="depends on locally deployed broker")
+# @pytest.mark.skip(reason="depends on locally deployed broker")
 def test_provisional():
     address_registry = "http://localhost:8081"
     bootstrap_server = "localhost:9092"
@@ -36,7 +37,7 @@ def test_provisional():
         ),
     )
 
-    message_key = str(uuid4())
+    message_key: str = str(uuid4())
 
     message_value: dict[str, Any] = {
         "meter_id": "Z",
@@ -46,20 +47,74 @@ def test_provisional():
         ),
     }
 
-    producer = KafkaProducer(bootstrap_servers=[bootstrap_server])
-
     message_topic = "testing_schemas"
 
-    producer.send(
-        topic=message_topic,
-        key=avro_key_serializer(
-            message_key,
-            SerializationContext(message_topic, MessageField.KEY),
+    producer = KafkaProducer(
+        bootstrap_servers=[bootstrap_server],
+        key_serializer=lambda x: avro_key_serializer(
+            x,
+            SerializationContext(
+                message_topic,
+                MessageField.KEY,
+            ),
         ),
-        value=avro_value_serializer(
-            message_value,
-            SerializationContext(message_topic, MessageField.VALUE),
+        value_serializer=lambda x: avro_value_serializer(
+            x,
+            SerializationContext(
+                message_topic,
+                MessageField.VALUE,
+            ),
         ),
     )
 
+    producer.send(
+        topic=message_topic,
+        key=message_key,
+        value=message_value,
+    )
+
     producer.flush()
+
+    ####
+
+    avro_key_deserializer = AvroDeserializer(
+        schema_registry_client=schema_registry_client,
+        schema_str='{"type": "string"}',
+    )
+
+    avro_value_deserializer = AvroDeserializer(
+        schema_registry_client=schema_registry_client,
+        schema_str=retrieve_schema_from_registry(
+            schema_registry_url=address_registry,
+            subject="meter_measurements-value",
+            version=1,
+        ),
+    )
+
+    consumer = KafkaConsumer(
+        bootstrap_servers=[bootstrap_server],
+        key_deserializer=lambda x: avro_key_deserializer(
+            x,
+            SerializationContext(
+                message_topic,
+                MessageField.KEY,
+            ),
+        ),
+        value_deserializer=lambda x: avro_value_deserializer(
+            x,
+            SerializationContext(
+                message_topic,
+                MessageField.VALUE,
+            ),
+        ),
+    )
+
+    tp = TopicPartition(message_topic, 0)
+    consumer.assign([tp])
+    # seek_to_beginning() and poll() must follow
+    # to fetch all messages.
+    consumer.seek_to_beginning()
+    msgs: list[ConsumerRecord] = consumer.poll(timeout_ms=100)[tp]  # type: ignore
+    consumer.close()
+    out = [x for x in msgs]
+    print(out)
